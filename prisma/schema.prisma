@@ -1,0 +1,123 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model PlatformAdmin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+
+
+}
+
+model Plan {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  features    Json
+  tenants     Tenant[]
+  createdAt   DateTime @default(now())
+
+
+}
+
+model Tenant {
+  id         String   @id @default(uuid())
+  name       String
+  schema     String   @unique
+  ownerEmail String   @unique
+  planId     String
+  plan       Plan     @relation(fields: [planId], references: [id])
+  createdAt  DateTime @default(now())
+
+
+}
+
+// Modelos para o schema "tenant" (válido pra múltiplos schemas via multiSchema no client)
+model Owner {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String?
+  oauthType String?
+  oauthId   String?  @unique
+  createdAt DateTime @default(now())
+
+
+}
+
+model Client {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String
+  phone        String?
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+
+
+}
+
+model Service {
+  id           String        @id @default(uuid())
+  name         String
+  description  String?
+  duration     Int
+  price        Float
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+
+
+}
+
+model Staff {
+  id             String          @id @default(uuid())
+  name           String
+  role           String
+  email          String          @unique
+  password       String?
+  appointments   Appointment[]
+  availableSlots AvailableSlot[]
+  createdAt      DateTime        @default(now())
+
+}
+
+model Appointment {
+  id          String   @id @default(uuid())
+  clientId    String
+  serviceId   String
+  staffId     String
+  scheduledAt DateTime
+  status      String
+  client      Client   @relation(fields: [clientId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id])
+  staff       Staff    @relation(fields: [staffId], references: [id])
+  createdAt   DateTime @default(now())
+
+}
+
+model AvailableSlot {
+  id           String    @id @default(uuid())
+  staffId      String
+  staff        Staff     @relation(fields: [staffId], references: [id])
+  dayOfWeek    Int
+  startTime    DateTime
+  endTime      DateTime
+  isRecurring  Boolean   @default(true)
+  specificDate DateTime?
+  createdAt    DateTime  @default(now())
+
+}
