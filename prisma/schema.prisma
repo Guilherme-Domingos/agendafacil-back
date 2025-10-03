@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -19,8 +14,6 @@ model PlatformAdmin {
   name      String
   password  String
   createdAt DateTime @default(now())
-
-
 }
 
 model Plan {
@@ -31,23 +24,25 @@ model Plan {
   features    Json
   tenants     Tenant[]
   createdAt   DateTime @default(now())
-
-
 }
 
 model Tenant {
-  id         String   @id @default(uuid())
-  name       String
-  schema     String   @unique
-  ownerEmail String   @unique
-  planId     String
-  plan       Plan     @relation(fields: [planId], references: [id])
-  createdAt  DateTime @default(now())
-
-
+  id              String          @id @default(uuid())
+  name            String
+  schema          String          @unique
+  ownerEmail      String          @unique
+  planId          String
+  plan            Plan            @relation(fields: [planId], references: [id])
+  createdAt       DateTime        @default(now())
+  owners          Owner[]
+  users           User[]
+  services        Service[]
+  staff           Staff[]
+  appointments    Appointment[]
+  availableSlots  AvailableSlot[]
 }
 
-// Modelos para o schema "tenant" (válido pra múltiplos schemas via multiSchema no client)
+
 model Owner {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -55,20 +50,9 @@ model Owner {
   password  String?
   oauthType String?
   oauthId   String?  @unique
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
   createdAt DateTime @default(now())
-
-
-}
-
-model Client {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  name         String
-  phone        String?
-  appointments Appointment[]
-  createdAt    DateTime      @default(now())
-
-
 }
 
 model Service {
@@ -77,10 +61,10 @@ model Service {
   description  String?
   duration     Int
   price        Float
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
   appointments Appointment[]
   createdAt    DateTime      @default(now())
-
-
 }
 
 model Staff {
@@ -89,24 +73,28 @@ model Staff {
   role           String
   email          String          @unique
   password       String?
+  tenantId       String
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
   appointments   Appointment[]
   availableSlots AvailableSlot[]
   createdAt      DateTime        @default(now())
-
 }
+
 
 model Appointment {
   id          String   @id @default(uuid())
-  clientId    String
+  userId      String
   serviceId   String
   staffId     String
   scheduledAt DateTime
-  status      String
-  client      Client   @relation(fields: [clientId], references: [id])
+  status      String   @default("pending")
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
   service     Service  @relation(fields: [serviceId], references: [id])
   staff       Staff    @relation(fields: [staffId], references: [id])
   createdAt   DateTime @default(now())
-
+  updatedAt   DateTime @updatedAt
 }
 
 model AvailableSlot {
@@ -118,6 +106,120 @@ model AvailableSlot {
   endTime      DateTime
   isRecurring  Boolean   @default(true)
   specificDate DateTime?
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id])
   createdAt    DateTime  @default(now())
+}
 
+
+
+model User {
+  id            String       @id
+  name          String       @db.Text
+  email         String
+  emailVerified Boolean      @default(false)
+  image         String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+  role          String?      @db.Text
+  banned        Boolean?     @default(false)
+  banReason     String?      @db.Text
+  banExpires    DateTime?
+  tenantId      String?
+  tenant        Tenant?      @relation(fields: [tenantId], references: [id])
+  sessions      Session[]
+  accounts      Account[]
+  members       Member[]
+  invitations   Invitation[]
+  appointments  Appointment[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?  @db.Text
+  userAgent            String?  @db.Text
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy       String?  @db.Text
+  activeOrganizationId String?  @db.Text
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @db.Text
+  providerId            String    @db.Text
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?   @db.Text
+  password              String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String   @db.Text
+  value      String   @db.Text
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
+}
+
+model Organization {
+  id          String       @id
+  name        String       @db.Text
+  slug        String
+  logo        String?      @db.Text
+  createdAt   DateTime
+  metadata    String?      @db.Text
+  members     Member[]
+  invitations Invitation[]
+
+  @@unique([slug])
+  @@map("organization")
+}
+
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @db.Text
+  createdAt      DateTime
+
+  @@map("member")
+}
+
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String       @db.Text
+  role           String?      @db.Text
+  status         String       @db.Text
+  expiresAt      DateTime
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@map("invitation")
 }
