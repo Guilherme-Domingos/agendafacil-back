@@ -80,16 +80,23 @@ export class TenantService {
         throw new Error('Falha ao criar usuário no Better Auth');
       }
 
-      // 4. Atualizar o User do Better Auth com o tenantId
+      // 4. Atualizar o User do Better Auth com a role
       await this.prisma.user.update({
         where: { email: data.ownerEmail },
         data: { 
-          tenantId: tenant.id,
-          role: 'manager', // Definir role como OWNER
+          role: 'manager', // Definir role como MANAGER/OWNER
         },
       });
 
-      // 5. Criar o Owner na tabela Owner (registro adicional para tracking)
+      // 5. Criar a relação User-Tenant na tabela UserTenant
+      await this.prisma.userTenant.create({
+        data: {
+          userId: betterAuthUser.user.id,
+          tenantId: tenant.id,
+        },
+      });
+
+      // 6. Criar o Owner na tabela Owner (registro adicional para tracking)
       const owner = await this.prisma.owner.create({
         data: {
           email: data.ownerEmail,
@@ -99,11 +106,11 @@ export class TenantService {
         },
       });
 
-      // 6. Gerar URL de verificação de email
+      // 7. Gerar URL de verificação de email
       const baseURL = process.env.BETTER_AUTH_URL || 'http://localhost:3333';
       const verificationUrl = `${baseURL}/api/auth/verify-email?token=${betterAuthUser.token || ''}`;
 
-      // 7. Enviar email de boas-vindas com a senha temporária e link de verificação
+      // 8. Enviar email de boas-vindas com a senha temporária e link de verificação
       try {
         await this.emailService.sendOwnerWelcomeEmail(
           data.ownerEmail,
@@ -166,7 +173,11 @@ export class TenantService {
         owners: true,
         services: true,
         staff: true,
-        users: true,
+        userTenants: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
     return tenants;

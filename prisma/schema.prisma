@@ -35,7 +35,7 @@ model Tenant {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   owners          Owner[]
-  users           User[]
+  userTenants     UserTenant[]
   services        Service[]
   staff           Staff[]
   appointments    Appointment[]
@@ -111,7 +111,17 @@ model AvailableSlot {
   createdAt    DateTime  @default(now())
 }
 
+model UserTenant {
+  id        String   @id @default(uuid())
+  userId    String
+  tenantId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
+  @@unique([userId, tenantId])
+  @@map("user_tenant")
+}
 
 model User {
   id            String       @id
@@ -125,8 +135,7 @@ model User {
   banned        Boolean?     @default(false)
   banReason     String?      @db.Text
   banExpires    DateTime?
-  tenantId      String?
-  tenant        Tenant?      @relation(fields: [tenantId], references: [id])
+  userTenants   UserTenant[]
   sessions      Session[]
   accounts      Account[]
   members       Member[]
