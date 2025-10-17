@@ -33,6 +33,7 @@ model Tenant {
   planId          String
   plan            Plan            @relation(fields: [planId], references: [id])
   createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   owners          Owner[]
   users           User[]
   services        Service[]
