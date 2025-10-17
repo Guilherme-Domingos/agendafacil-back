@@ -28,6 +28,25 @@ export class OwnerService {
     return owners;
   }
 
+  async findByEmail(email: string) {
+    const owner = await this.prisma.owner.findUnique({
+      where: { email },
+      include: {
+        tenant: {
+          include: {
+            plan: true,
+          },
+        },
+      },
+    });
+
+    if (!owner) {
+      throw new NotFoundException('Proprietário não encontrado');
+    }
+
+    return owner;
+  }
+
   async findOne(id: string) {
     const owner = await this.prisma.owner.findUnique({
       where: { id },

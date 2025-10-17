@@ -2,13 +2,17 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
+import { EmailService } from 'src/infra/email/email.service';
 import { auth } from 'src/lib/auth';
 import * as crypto from 'crypto';
 
 
 @Injectable()
 export class TenantService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async create(data: CreateTenantDto) {
     // Verificar se já existe um Owner com esse email
@@ -95,11 +99,26 @@ export class TenantService {
         },
       });
 
-      // TODO: Enviar email com a senha padrão para o owner
+      // 6. Gerar URL de verificação de email
+      const baseURL = process.env.BETTER_AUTH_URL || 'http://localhost:3333';
+      const verificationUrl = `${baseURL}/api/auth/verify-email?token=${betterAuthUser.token || ''}`;
+
+      // 7. Enviar email de boas-vindas com a senha temporária e link de verificação
+      try {
+        await this.emailService.sendOwnerWelcomeEmail(
+          data.ownerEmail,
+          verificationUrl,
+          defaultPassword,
+        );
+        console.log(`✅ Email de boas-vindas enviado para: ${data.ownerEmail}`);
+      } catch (emailError) {
+        console.error('⚠️  Erro ao enviar email de boas-vindas:', emailError);
+        // Não falhar a criação do tenant se o email falhar
+      }
+
       console.log(`✅ Tenant criado: ${tenant.name}`);
       console.log(`✅ Usuário criado no Better Auth: ${data.ownerEmail}`);
       console.log(`✅ Senha temporária gerada: ${defaultPassword}`);
-      console.log(`⚠️  IMPORTANTE: Envie a senha temporária para o email do proprietário`);
 
       // Retornar o tenant com o owner incluído
       return await this.prisma.tenant.findUnique({

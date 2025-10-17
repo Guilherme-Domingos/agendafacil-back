@@ -42,6 +42,15 @@ export class OwnerController {
     return this.ownerService.findAll(tenantId);
   }
 
+  @Get('by-email/:email')
+  @ApiOperation({ summary: 'Buscar um proprietário por email' })
+  @ApiParam({ name: 'email', description: 'Email do proprietário' })
+  @ApiResponse({ status: 200, description: 'Proprietário encontrado' })
+  @ApiResponse({ status: 404, description: 'Proprietário não encontrado' })
+  findByEmail(@Param('email') email: string) {
+    return this.ownerService.findByEmail(email);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar um proprietário por ID' })
   @ApiParam({ name: 'id', description: 'ID do proprietário' })
