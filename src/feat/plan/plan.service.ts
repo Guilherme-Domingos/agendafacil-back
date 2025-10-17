@@ -54,6 +54,7 @@ export class PlanService {
   }
 
   async remove(id: string) {
+    console.log('Deleting plan with id:', id);
     const plan = await this.prisma.plan.findUnique({
       where: { id },
     });

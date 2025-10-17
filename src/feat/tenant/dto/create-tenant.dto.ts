@@ -10,13 +10,6 @@ export class CreateTenantDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({
-    description: 'Schema do banco de dados para o tenant',
-    example: 'empresa_xyz',
-  })
-  @IsString()
-  @IsNotEmpty()
-  schema: string;
 
   @ApiProperty({
     description: 'Email do proprietário do tenant',
