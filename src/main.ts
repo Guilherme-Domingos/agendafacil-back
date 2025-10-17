@@ -41,9 +41,13 @@ async function bootstrap() {
         '- **ADMIN**: Acesso administrativo completo',
     )
     .setVersion('1.0')
-    .addTag('Autenticação', 'Endpoints de login e gerenciamento de tokens')
-    .addTag('Rotas Protegidas', 'Endpoints que requerem autenticação')
-    .addTag('agendafacil', 'Funcionalidades principais da aplicação')
+    .addTag('Tenant', 'Gerenciamento de tenants (organizações)')
+    .addTag('Owner', 'Gerenciamento de proprietários')
+    .addTag('Plan', 'Gerenciamento de planos de assinatura')
+    .addTag('Service', 'Gerenciamento de serviços oferecidos')
+    .addTag('Staff', 'Gerenciamento de funcionários')
+    .addTag('Appointment', 'Gerenciamento de agendamentos')
+    .addTag('Available Slot', 'Gerenciamento de slots de disponibilidade')
     .addBearerAuth(
       {
         type: 'http',
